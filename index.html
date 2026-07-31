@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- INDEX299: loadStudentAssignments with act-box editor, TPrend_MS reads all submission stores, TPtab calls TPrend_MS on marksheet open. -->
+<!-- INDEX300: built from 299; added demo assignment to TPdemoData; event-delegation marksheet fix; student act-box editor in My Assignments. -->
+<!-- INDEX299v2: loadStudentAssignments with act-box editor, TPrend_MS reads all submission stores, TPtab calls TPrend_MS on marksheet open. -->
 <!-- INDEX295_FINAL: My Work & Feedback top-level containment fix from index294_FINAL_FIX. No other sections rebuilt. -->
 <html lang="en-GB">
 <head><meta name="historyhub-build-index280" content="INDEX270_2026_07_29_FROM_267_NO_PATCHES"><meta content="INDEX267_FINAL_IGCSE_COMPLETION_PASS_2026_07_29_FULL_FILE_NO_PATCHES" name="historyhub-build-index267"/><meta content="INDEX266_IGCSE_FINAL_PASS_2026_07_29_FULL_FILE_NO_PATCHES" name="historyhub-build-index266"/><meta content="INDEX259_IGCSE_IMAGE_ROLLOUT_2026_07_28: full file from 258; no patches; iGCSE panel images, topic images, detail images, and subpage visual cards." name="historyhub-build-index259"/><meta content="INDEX258_FINAL_YEAR9_WW1_TIDY_AND_VISIBLE_FIX_2026_07_28: full file from 257; no patches; medicine visible in trenches; weapons fully separate; WW1 links box reordered/tidied; panels reinforced." name="historyhub-build-index258"/><meta content="INDEX257_FINAL_YEAR9_WW1_RESTORE_AND_FINISH_2026_07_27: full file from 256; no patches; restores 255 working images; moves weapons fully to subpage; deepens battle page; strengthens panel images." name="historyhub-build-index257"/><meta content="INDEX256_FINAL_YEAR9_WW1_COMPLETE_PASS_2026_07_27: full file from 255; no patches; fixes WW1 missing images; captions; major battles detail; weapons subpage." name="historyhub-build-index256"/><meta content="INDEX255_SIMPLE_DIRECT_IMAGE_RESTORE_2026_07_27: full file from 254; no patches; direct original image URLs for screenshot-missing Year 9 sources; repetitions reduced." name="historyhub-build-index255"/><meta content="INDEX254_SIMPLE_YEAR9_IMAGE_RESTORE_2026_07_27: full file built from 253; no patches/no post-build; direct image source fixes, repetition reduction, major battles kept as subpage link only." name="historyhub-build-index254"/><meta content="INDEX253_SIMPLE_YEAR9_RESTORE_2026_07_27: built from 252; no patches/no post-build; restores missing images, reduces Trafalgar and League repetition, moves WW1 battles into subpage links only." name="historyhub-build-index253"/><meta content="INDEX252_FROM_251_SIMPLE_YEAR9_IMAGE_AND_BATTLES_FIX_2026_07_27: full file; no patches; fixes missing Year 9 images, removes Trafalgar repetitions, adds visible WW1 battles and more weapons images." name="historyhub-build-index252"/><meta content="INDEX251_REBUILT_FROM_249_SIMPLE_YEAR9_FIX_2026_07_27: full file; based on 249 not 250; no patches; restores image logic and adds WW1 battles/Armistice/weapons support." name="historyhub-build-index251"/><meta content="INDEX249_YEAR9_SECOND_IMAGE_PASS_MAJOR_BATTLES_2026_07_27_FINAL: complete file built from index248; no patches/no post-build; League repetition reduced with a unique Covenant source and WW1 major battles subpage included." name="historyhub-build-index249"/><meta content="INDEX248_YEAR9_IMAGE_ROLLOUT_2026_07_27: complete file built from index247; no patches/no post-build; Year 8 panel clean-up plus first focused Year 9 image rollout using the same 234/245/247 figure-card logic." name="historyhub-build-index248"/><meta content="INDEX247_YEAR8_FINAL_SMALL_RESTORE_FROM_245_2026_07_27: complete file built from index246; no patches/no post-build; restored the few Year 8 images that were visible in 245 but regressed in 246, while preserving 246 home/year-panel improvements." name="historyhub-build-index247"/><meta content="INDEX246_YEAR8_FINAL_SCREENSHOT_IMAGE_PASS_2026_07_26: complete file built from index245; no patches/no post-build; targeted Year 8 missing-image and panel-image fixes only." name="historyhub-build-index246"/><meta content="INDEX245_YEAR8_SIMPLE_IMAGE_RESTORE_2026_07_26: complete file built from index244; no patches/no post-build; screenshot-guided Year 8 image-source restoration using existing 234/242 figure-card logic." name="historyhub-build-index245"/><meta content="INDEX244_SIMPLE_TRIANGULAR_TRADE_RESTORE_2026_07_26: complete file built from index243; no patch/post-build; only restores the triangular trade diagram to a real labelled Wikimedia map and uses direct Brookes source." name="historyhub-build-index244"/><meta content="INDEX243_YEAR8_SCREENSHOT_GUIDED_COMPLETE_FILE_2026_07_26: complete file built directly from live index.html / index242. No patch/post-build. Year 8 screenshot image corrections applied in-place." name="historyhub-build-index243"/>
@@ -10700,7 +10701,20 @@ window.TPdelCls=function(id){if(!confirm('Delete this class?'))return;var d=gd()
 function TPrend_CL(){var c=document.getElementById('tp-cllist');if(!c)return;var d=gd(),cls=d.classes||{},ks=Object.keys(cls);if(!ks.length){c.innerHTML='<p style="color:#a8a29e">No classes yet.</p>';return}c.innerHTML=ks.map(function(id){var cl=cls[id],code=id.slice(-6).toUpperCase();return '<div class="tp-card"><h4>'+esc(cl.name)+'</h4><p>'+esc(cl.year)+' · Code: <b style="color:#fbbf24">'+code+'</b> · '+(cl.students||[]).length+' students</p><div>'+(cl.students||[]).slice(0,10).map(function(s){return '<span class="tp-chip">'+esc(s.name)+'</span>'}).join('')+'</div><textarea id="si-'+id+'" class="tp-ta" placeholder="Add students, one per line"></textarea><button class="tp-btn green" onclick="TPaddStu(\''+id+'\')">Add students</button><button class="tp-btn red" onclick="TPdelCls(\''+id+'\')">Delete</button></div>'}).join('')}
 function TPrend_MS(){var c=document.getElementById('tp-ms');if(!c)return;var d=gd(),subs=Object.values(d.subs||{}),cls=d.classes||{};if(!subs.length){c.innerHTML='<p style="color:#a8a29e">No submissions yet.</p>';return}var by={};subs.forEach(function(s){(by[s.classId]=by[s.classId]||[]).push(s)});c.innerHTML=Object.keys(by).map(function(cid){var cl=cls[cid]||{name:'Unknown class'},rows=by[cid].map(function(s){return '<tr><td>'+esc(s.student)+'</td><td>'+esc(s.title)+'</td><td><span class="gb '+gradeClass(s.grade)+'">'+esc(s.grade||'Unmarked')+'</span></td><td>'+esc(s.feedback||'')+'</td><td><button class="tp-btn blue" onclick="TPmark(\''+s.id+'\')">Edit</button></td></tr>'}).join('');return '<h4 style="color:#fbbf24">'+esc(cl.name)+'</h4><table class="tp-tbl"><tr><th>Student</th><th>Activity</th><th>Grade</th><th>Feedback / next steps</th><th></th></tr>'+rows+'</table><div class="tp-card"><b>Gap analysis:</b> '+by[cid].filter(function(s){return /Below/.test(s.grade||'')}).length+' students currently below expected level. Suggested action: revisit vocabulary, provide model answer and reattempt activity.</div>'}).join('')}
 window.TPmark=function(id){var d=gd(),s=d.subs&&d.subs[id];if(!s)return;var g=prompt('Grade',s.grade||'Inline');if(!g)return;var f=prompt('Feedback',s.feedback||'');s.grade=g;s.feedback=f;s.markedAt=new Date().toISOString();sd(d);TPrend_MS()}
-window.TPdemoData=function(){var d=gd();if(!d.classes)d.classes={};var cid='cls_demo';d.classes[cid]={id:cid,name:'Demo Class 7A',year:'Year 7',pin:'demo',students:[{name:'Demo Student',id:'s_demo'}]};if(!d.subs)d.subs={};d.subs['sub_demo']={id:'sub_demo',student:'Demo Student',classId:cid,title:'Demo Activity',content:'This is a demo answer using evidence because it explains significance.',grade:'Inline',feedback:'Good start. Add more precise topic detail and a stronger judgement.',at:new Date().toISOString(),auto:true};sd(d);document.getElementById('tp-testlog').innerHTML='<span class="test-ok">Demo class and submission created. PIN/code: DEMO.</span>';TPrend_CL();TPrend_MS()}
+window.TPdemoData=function(){var d=gd();if(!d.classes)d.classes={};var cid='cls_demo';d.classes[cid]={id:cid,name:'Demo Class 7A',year:'Year 7',pin:'demo',students:[{name:'Demo Student',id:'s_demo'}]};if(!d.subs)d.subs={};d.subs['sub_demo']={id:'sub_demo',student:'Demo Student',classId:cid,title:'Demo Activity',content:'This is a demo answer using evidence because it explains significance.',grade:'Inline',feedback:'Good start. Add more precise topic detail and a stronger judgement.',at:new Date().toISOString(),auto:true};sd(d);
+/* also add a demo assignment so My Assignments works in testing */
+try{
+  var da=JSON.parse(localStorage.getItem('msh_assignments')||'[]');
+  if(!da.some(function(x){return x.id==='asgn_demo';})){
+    da.push({id:'asgn_demo',title:'Demo Assignment — Norman Conquest',classId:'cls_demo',classCode:'DEMO',topic:'Year 7 — Norman Conquest',due:'See your teacher',instructions:'Explain why William won the Battle of Hastings in 1066. Use evidence. Make a clear judgement.',created:new Date().toLocaleDateString('en-GB')});
+    localStorage.setItem('msh_assignments',JSON.stringify(da));
+  }
+  /* also add to gd().assignments */
+  if(!d.assignments)d.assignments={};
+  d.assignments['asgn_demo']={id:'asgn_demo',title:'Demo Assignment — Norman Conquest',classId:'cls_demo',classCode:'DEMO',topic:'Year 7 — Norman Conquest',due:'See your teacher',instructions:'Explain why William won the Battle of Hastings in 1066. Use evidence. Make a clear judgement.',created:new Date().toLocaleDateString('en-GB')};
+  sd(d);
+}catch(e){}
+document.getElementById('tp-testlog').innerHTML='<span class="test-ok">Demo class, submission and assignment created. Class code: DEMO.</span>';TPrend_CL();TPrend_MS()}
 window.TPclearDemo=function(){var d=gd();if(d.classes)delete d.classes['cls_demo'];if(d.subs)delete d.subs['sub_demo'];sd(d);document.getElementById('tp-testlog').innerHTML='<span class="test-warn">Demo data cleared.</span>';TPrend_CL();TPrend_MS()}
 window.TPexport=function(){var blob=new Blob([JSON.stringify(gd(),null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='History_Hub_Teacher_Data.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
 window.TPclearAll=function(){if(!confirm('Clear all teacher portal data?'))return;localStorage.removeItem(SK);localStorage.removeItem(SSK);TPrend_CL();TPrend_MS()}
@@ -11303,6 +11317,34 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){re
     setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 300);
   };
 
+})();
+</script>
+
+<script id="index299v2-marksheet-final-fix">
+/* This script runs last and uses event delegation so it ALWAYS fires
+   regardless of which TPtab override is active */
+(function(){
+  /* Watch for the marksheet tab being clicked directly */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    /* Marksheet tab click */
+    if(btn.id==='tptab-ms' || btn.getAttribute('onclick')==="TPtab('ms')"){
+      setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 80);
+    }
+  }, true);
+
+  /* Also patch TPlogin so marksheet auto-populates on portal open */
+  var _pl = window.TPlogin;
+  window.TPlogin = function(){
+    if(typeof _pl==='function') _pl.apply(this, arguments);
+    setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 400);
+  };
+
+  /* Run TPrend_MS on DOMContentLoaded too (catches already-logged-in case) */
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 800);
+  });
 })();
 </script>
 
