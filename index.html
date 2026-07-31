@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- INDEX301: loadStudentAssignments now builds DOM nodes with act-box editors; TPrend_MS reads both gd().subs and jhs_teacher_submissions; event delegation for marksheet tab. -->
 <!-- INDEX300: built from 299; added demo assignment to TPdemoData; event-delegation marksheet fix; student act-box editor in My Assignments. -->
 <!-- INDEX299v2: loadStudentAssignments with act-box editor, TPrend_MS reads all submission stores, TPtab calls TPrend_MS on marksheet open. -->
 <!-- INDEX295_FINAL: My Work & Feedback top-level containment fix from index294_FINAL_FIX. No other sections rebuilt. -->
@@ -9999,32 +10000,114 @@ window.loadStudentAssignments = function() {
   try {
     var d = JSON.parse(localStorage.getItem('mrsh_tp_phase2_v1') || '{}');
     var assignments = Object.values(d.assignments || {});
+    // Also read from msh_assignments legacy store
+    try {
+      var legacy = JSON.parse(localStorage.getItem('msh_assignments') || '[]');
+      if (Array.isArray(legacy)) {
+        legacy.forEach(function(a) {
+          if (a && a.id && !assignments.some(function(x){return x.id===a.id;})) {
+            assignments.push(a);
+          }
+        });
+      }
+    } catch(e2){}
+
     var classes = d.classes || {};
+
     if (assignments.length === 0) {
       list.innerHTML = '<p style="color:#a8a29e;font-size:.84rem;">No assignments set yet. Check back after your teacher has created one.</p>';
       return;
     }
+
     // Filter by class code if provided
-    var relevant = assignments.filter(function(a) {
-      if (!code.trim()) return true;
-      var cls = classes[a.classId];
-      return cls && (
-        cls.pin === code.trim().toLowerCase() ||
-        a.classId.slice(-6).toUpperCase() === code.trim().toUpperCase()
-      );
-    });
+    var relevant = code.trim() ? assignments.filter(function(a) {
+      var cu = code.trim().toUpperCase();
+      var cl = code.trim().toLowerCase();
+      var cls = classes[a.classId] || {};
+      return (a.classCode || '').toUpperCase() === cu ||
+             (a.classId || '').slice(-6).toUpperCase() === cu ||
+             (cls.pin || '').toLowerCase() === cl ||
+             (cls.code || '').toUpperCase() === cu;
+    }) : assignments;
+
     if (relevant.length === 0) {
-      list.innerHTML = '<p style="color:#a8a29e;font-size:.84rem;">No assignments found for class code "' + code + '". Check with your teacher.</p>';
+      list.innerHTML = '<p style="color:#a8a29e;font-size:.84rem;">No assignments found for code "' + code + '". Check with your teacher or leave blank to see all.</p>';
       return;
     }
-    list.innerHTML = relevant.map(function(a) {
-      return '<div style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:10px;padding:12px;margin-bottom:8px;">'
-        + '<div style="font-family:Alegreya,serif;color:#fbbf24;font-size:.95rem;margin-bottom:4px;">' + (a.title||'Assignment') + '</div>'
-        + '<div style="font-size:.76rem;color:#a8a29e;">Topic: ' + (a.topic||'—') + ' &nbsp;·&nbsp; Due: ' + (a.due||'not set') + '</div>'
-        + (a.instructions ? '<div style="font-size:.8rem;color:#e8e4d0;margin-top:6px;line-height:1.5;">' + a.instructions + '</div>' : '')
-        + '<div style="margin-top:6px;font-size:.74rem;color:#6ee7b7;">✓ ' + (a.auto !== false ? 'Auto-marking on' : 'Teacher marking') + (a.resub !== false ? ' · Resubmission allowed' : '') + '</div>'
-        + '</div>';
-    }).join('');
+
+    // Build DOM nodes (not innerHTML) so we can attach editors properly
+    list.innerHTML = '';
+    relevant.forEach(function(a, idx) {
+      // Outer card
+      var card = document.createElement('div');
+      card.style.cssText = 'background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:12px;padding:14px;margin-bottom:12px;';
+
+      // Assignment header
+      var title = document.createElement('div');
+      title.style.cssText = 'font-family:Alegreya,serif;color:#fbbf24;font-size:1rem;margin-bottom:4px;font-weight:700;';
+      title.textContent = a.title || 'Assignment';
+      card.appendChild(title);
+
+      var meta = document.createElement('div');
+      meta.style.cssText = 'font-size:.76rem;color:#a8a29e;margin-bottom:6px;';
+      meta.textContent = 'Topic: ' + (a.topic || '—') + '  ·  Due: ' + (a.due || 'not set');
+      card.appendChild(meta);
+
+      if (a.instructions) {
+        var inst = document.createElement('div');
+        inst.style.cssText = 'font-size:.84rem;color:#e8e4d0;margin-bottom:8px;line-height:1.6;border-left:3px solid rgba(212,175,55,.4);padding-left:10px;';
+        inst.textContent = a.instructions;
+        card.appendChild(inst);
+      }
+
+      var flags = document.createElement('div');
+      flags.style.cssText = 'font-size:.74rem;color:#6ee7b7;margin-bottom:10px;';
+      flags.innerHTML = '✓ ' + (a.auto !== false ? 'Auto-marking on' : 'Teacher marking') +
+                        (a.resub !== false ? ' · Resubmission allowed' : '');
+      card.appendChild(flags);
+
+      // Act-box for editor
+      var actBox = document.createElement('div');
+      actBox.className = 'act-box';
+      actBox.style.borderLeftColor = '#6366f1';
+      actBox.style.margin = '0';
+
+      var actTitle = document.createElement('div');
+      actTitle.className = 'act-title';
+      actTitle.style.color = '#a5b4fc';
+      actTitle.innerHTML = '✏️ Write your answer for this assignment';
+      actBox.appendChild(actTitle);
+
+      var actBody = document.createElement('div');
+      actBody.className = 'act-body';
+      actBody.innerHTML = '<ul><li>Read the instructions above carefully.</li>' +
+        '<li>Write your full answer — use evidence, analysis and a clear judgement.</li>' +
+        '<li>Click <strong>Auto Mark My Work</strong> for instant feedback.</li>' +
+        '<li>When ready, click <strong>Submit to Teacher</strong>.</li></ul>';
+      actBox.appendChild(actBody);
+
+      card.appendChild(actBox);
+
+      // Attach editor button immediately using DOM
+      if (typeof buildBtn === 'function' && typeof buildEditor === 'function') {
+        actBox.appendChild(buildBtn());
+        actBox.appendChild(buildEditor(Date.now() + idx));
+      }
+
+      list.appendChild(card);
+    });
+
+    // Safety net: re-run DOMContentLoaded-style scan for any missed boxes
+    setTimeout(function() {
+      list.querySelectorAll('.act-box').forEach(function(box, i) {
+        if (!box.querySelector('.act-toggle-btn') &&
+            typeof buildBtn === 'function' && typeof buildEditor === 'function') {
+          box.appendChild(buildBtn());
+          box.appendChild(buildEditor(Date.now() + i + 9999));
+        }
+      });
+    }, 100);
+
   } catch(e) {
     list.innerHTML = '<p style="color:#f87171;font-size:.84rem;">Could not load assignments.</p>';
   }
@@ -11345,6 +11428,91 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){re
   document.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 800);
   });
+})();
+</script>
+
+
+<script id="index301-marksheet-and-editor-fix">
+(function(){
+  /* FIX A: TPrend_MS reads BOTH gd().subs AND jhs_teacher_submissions */
+  var _origTPrend = window.TPrend_MS;
+  window.TPrend_MS = function(){
+    var c = document.getElementById('tp-ms');
+    if (!c) return;
+
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function grClass(g){
+      if(!g||g==='Unmarked')return 'gb-grey';
+      if(g==='Platinum'||g==='Above')return 'gb-plat';
+      if(g==='Gold'||g==='Inline')return 'gb-gold';
+      return 'gb-bron';
+    }
+
+    // Collect from gd().subs
+    var subsGD = [];
+    try{ var d=(typeof gd==='function')?gd():JSON.parse(localStorage.getItem('mrsh_tp_phase2_v1')||'{}'); subsGD=Object.values(d.subs||{}); }catch(e){}
+
+    // Collect from jhs_teacher_submissions (activity editor)
+    var subsLS = [];
+    try{ subsLS=JSON.parse(localStorage.getItem('jhs_teacher_submissions')||'[]'); }catch(e){}
+    if(!Array.isArray(subsLS))subsLS=[];
+
+    // Merge + deduplicate
+    var seen={}, all=[];
+    subsGD.concat(subsLS).forEach(function(s){
+      var key=s.id||(String(s.student||s.studentName||'')+'|'+String(s.title||''));
+      if(!seen[key]){seen[key]=true;all.push(s);}
+    });
+
+    if(!all.length){
+      c.innerHTML='<p style="color:#a8a29e">No submissions yet. Students submit work using the ✏️ Open Editor button.</p>';
+      return;
+    }
+
+    // Group by class
+    var byClass={};
+    all.forEach(function(s){
+      var cid=s.classId||s.page||'general';
+      (byClass[cid]=byClass[cid]||[]).push(s);
+    });
+    var cls={};
+    try{ var d2=(typeof gd==='function')?gd():JSON.parse(localStorage.getItem('mrsh_tp_phase2_v1')||'{}'); cls=d2.classes||{}; }catch(e){}
+
+    c.innerHTML=Object.keys(byClass).map(function(cid){
+      var clObj=cls[cid]||{name:cid==='general'?'General submissions':'Class '+cid};
+      var rows=byClass[cid].map(function(s){
+        var student=esc(s.student||s.studentName||'Student');
+        var title=esc(s.title||'Activity');
+        var grade=esc(s.grade||s.autoMarkLevel||'Submitted');
+        var fb=esc((s.feedback||s.autoMarkFeedback||s.teacherFeedback||'').substring(0,120));
+        return '<tr><td>'+student+'</td><td>'+title+'</td><td><span class="gb '+grClass(s.grade||s.autoMarkLevel)+'">'+grade+'</span></td><td style="font-size:.8rem;color:#e8e4d0;max-width:220px;">'+fb+'</td></tr>';
+      }).join('');
+      return '<h4 style="color:#fbbf24;margin:12px 0 6px">'+esc(clObj.name)+'</h4>'
+        +'<table class="tp-tbl"><tr><th>Student</th><th>Activity</th><th>Grade</th><th>Feedback</th></tr>'+rows+'</table>';
+    }).join('');
+  };
+
+  /* FIX B: Event delegation — marksheet tab click always fires TPrend_MS */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    if(btn.id==='tptab-ms' || (btn.getAttribute('onclick')||'').indexOf("TPtab('ms')")!==-1){
+      setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 80);
+    }
+  }, true);
+
+  /* FIX C: Call TPrend_MS after portal login */
+  var _prevLogin = window.TPlogin;
+  window.TPlogin = function(){
+    if(typeof _prevLogin==='function') _prevLogin.apply(this, arguments);
+    setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 300);
+  };
+
+  /* FIX D: Call TPrend_MS on load */
+  window.addEventListener('load', function(){
+    setTimeout(function(){ if(typeof TPrend_MS==='function') TPrend_MS(); }, 800);
+  });
+
 })();
 </script>
 
